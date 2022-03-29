@@ -42,10 +42,10 @@ void fill_array(sf::VertexArray& set, float scale, float width, float height, sf
 	horizontalRes = (abs(scaleStart) + abs(scaleEnd)) / width * 1;
 	verticalRes = (abs(scaleStart) + abs(scaleEnd)) / height * 1;
 
-	horizontalStart = scaleStart + ((mouse.x - shift.x) / horizontalSize);
-	horizontalEnd = scaleEnd + ((mouse.x - shift.x) / horizontalSize);
-	verticalStart = scaleStart + ((mouse.y - shift.y) / verticalSize);
-	verticalEnd = scaleEnd + ((mouse.y - shift.y) / verticalSize);
+	horizontalStart = scaleStart + ((origin.x - shift.x) / horizontalSize);
+	horizontalEnd = scaleEnd + ((origin.x - shift.x) / horizontalSize);
+	verticalStart = scaleStart + ((origin.y - shift.y) / verticalSize);
+	verticalEnd = scaleEnd + ((origin.y - shift.y) / verticalSize);
 
 	sf::Vector2f position;
 	int num;
@@ -105,9 +105,13 @@ int main() {
 	double last_scale = 0;
 	sf::Event event;
 	list<thread> active_threads;
-	int max_threads = 8;
+	int max_threads = 12;
 	list<sf::VertexArray> sets;
 	list<sf::VertexArray>::iterator setIter;
+	sf::CircleShape dot(1);
+	dot.setFillColor(sf::Color::Green);
+	dot.setPosition(500, 500);
+	int totalPoints = 0;
 
 	//INITIAL SET CREATION---------------------------------------------------
 	for (int i = 0; i < max_threads; i++) {
@@ -137,18 +141,22 @@ int main() {
 					scale /= 2;
 				}
 				make_set(sets, setIter, active_threads, max_threads, scale, window.getSize().x, window.getSize().y, sf::Vector2f(event.mouseWheelScroll.x, event.mouseWheelScroll.y), last_shift, last_scale);
-				//cout << event.mouseWheelScroll.x << ", " << event.mouseWheelScroll.y << endl;
+				//cout << event.mouseWheelScroll.x << ", " << event.mouseWheelScroll.y << endl; 60.5, 495.5
 			}
 		}
-		/*for (auto& th : active_threads) {
+		for (auto& th : active_threads) {
 			if (th.joinable())
 				th.join();
-		}*/
+		}
 		//RENDER--------------------------------------------------------------
 		window.clear(bgColor);
 		for (setIter = sets.begin(); setIter != sets.end(); setIter++) {
+			totalPoints += (*setIter).getVertexCount();
 			window.draw(*setIter);
 		}
+		cout << totalPoints << endl;
+		totalPoints = 0;
+		window.draw(dot);
 		window.display();
 	}
 	for (auto& th : active_threads) {
