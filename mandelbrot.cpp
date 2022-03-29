@@ -19,9 +19,8 @@ int iterations(complex<double> c) {
 }
 
 
-void fill_array(sf::VertexArray& set, float scale, float width, float height, int mouse_x, int mouse_y, int thread, int max_threads) {
+void fill_array(sf::VertexArray& set, float scale, float width, float height, sf::Vector2f mouse, sf::Vector2f &last_shift, double &last_scale, int thread, int max_threads) {
 	sf::Vector2f shift;
-	sf::Vector2f mouse(mouse_x, mouse_y);
 	double horizontalRes;
 	double verticalRes;
 	double horizontalStart;
@@ -37,15 +36,16 @@ void fill_array(sf::VertexArray& set, float scale, float width, float height, in
 	double verticalSize = (height / (abs(scaleStart) + abs(scaleEnd)));
 
 	shift = origin + ((origin - mouse) * scale);
+
 	horizontalSize = (width / (abs(scaleStart) + abs(scaleEnd)));
 	verticalSize = (height / (abs(scaleStart) + abs(scaleEnd)));
 	horizontalRes = (abs(scaleStart) + abs(scaleEnd)) / width * 1;
 	verticalRes = (abs(scaleStart) + abs(scaleEnd)) / height * 1;
 
-	horizontalStart = start;
-	horizontalEnd = end;
-	verticalStart = start;
-	verticalEnd = end;
+	horizontalStart = scaleStart + ((mouse.x - shift.x) / horizontalSize);
+	horizontalEnd = scaleEnd + ((mouse.x - shift.x) / horizontalSize);
+	verticalStart = scaleStart + ((mouse.y - shift.y) / verticalSize);
+	verticalEnd = scaleEnd + ((mouse.y - shift.y) / verticalSize);
 
 	sf::Vector2f position;
 	int num;
@@ -81,13 +81,13 @@ void fill_array(sf::VertexArray& set, float scale, float width, float height, in
 	}
 }
 
-void make_set(list<sf::VertexArray> &sets, list<sf::VertexArray>::iterator setIter, list<thread> &active_threads, int max_threads, double scale, int window_width, int window_height, int mouse_x, int mouse_y) {
+void make_set(list<sf::VertexArray> &sets, list<sf::VertexArray>::iterator setIter, list<thread> &active_threads, int max_threads, double scale, int window_width, int window_height, sf::Vector2f mouse, sf::Vector2f &last_shift, double &last_scale) {
 	int i = 0;
 	for (setIter = sets.begin(); setIter != sets.end(); setIter++) {
 		(*setIter).clear();
 	}
 	for (auto& s : sets) {
-		active_threads.emplace_back(fill_array, ref(s), scale, window_width, window_height, mouse_x, mouse_y, i, max_threads);
+		active_threads.emplace_back(fill_array, ref(s), scale, window_width, window_height, mouse, ref(last_shift), ref(last_scale), i, max_threads);
 		i++;
 	}
 }
@@ -101,6 +101,8 @@ int main() {
 	//VARIABLES-------------------------------------------------------------
 	sf::Color bgColor = sf::Color(8, 6, 12);
 	double scale = 1;
+	sf::Vector2f last_shift;
+	double last_scale = 0;
 	sf::Event event;
 	list<thread> active_threads;
 	int max_threads = 8;
@@ -113,7 +115,7 @@ int main() {
 		s1.setPrimitiveType(sf::PrimitiveType::Points);
 		sets.push_back(s1);
 	}
-	make_set(sets, setIter, active_threads, max_threads, scale, window.getSize().x, window.getSize().y, 500, 500);
+	make_set(sets, setIter, active_threads, max_threads, scale, window.getSize().x, window.getSize().y, sf::Vector2f(500,500), last_shift, last_scale);
 
 	//GAME LOOP--------------------------------------------------------------
 	while (window.isOpen()) {
@@ -134,7 +136,8 @@ int main() {
 				else if (event.mouseWheelScroll.delta < 0) {
 					scale /= 2;
 				}
-				make_set(sets, setIter, active_threads, max_threads, scale, window.getSize().x, window.getSize().y, event.mouseWheelScroll.x, event.mouseWheelScroll.y);
+				make_set(sets, setIter, active_threads, max_threads, scale, window.getSize().x, window.getSize().y, sf::Vector2f(event.mouseWheelScroll.x, event.mouseWheelScroll.y), last_shift, last_scale);
+				//cout << event.mouseWheelScroll.x << ", " << event.mouseWheelScroll.y << endl;
 			}
 		}
 		/*for (auto& th : active_threads) {
