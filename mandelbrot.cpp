@@ -20,58 +20,62 @@ int iterations(complex<double> c) {
 
 
 void fill_array(sf::VertexArray& set, float scale, float width, float height, int mouse_x, int mouse_y, int thread, int max_threads) {
-	double shiftX;
-	double shiftY;
+	sf::Vector2f shift;
+	sf::Vector2f mouse(mouse_x, mouse_y);
 	double horizontalRes;
 	double verticalRes;
-	double centerX = (width / 2);
-	double centerY = (height / 2);
-	double horizontalStart = (-2 / scale);
-	double horizontalEnd = (2 / scale);
-	double verticalStart = (-2 / scale);
-	double verticalEnd = (2 / scale);
-	double horizontalSize = (width / (abs(horizontalStart) + abs(horizontalEnd)));
-	double verticalSize = (height / (abs(verticalStart) + abs(verticalEnd)));
+	double horizontalStart;
+	double horizontalEnd;
+	double verticalStart;
+	double verticalEnd;
+	sf::Vector2f origin((width / 2), (height / 2));
+	double start = (-2 / 1);
+	double end = (2 / 1);
+	double scaleStart = (-2 / scale);
+	double scaleEnd = (2 / scale);
+	double horizontalSize = (width / (abs(scaleStart) + abs(scaleEnd)));
+	double verticalSize = (height / (abs(scaleStart) + abs(scaleEnd)));
 
-	shiftX = ((centerX) + (((centerX) - (mouse_x))));
-	shiftY = ((centerY) + (((centerY) - (mouse_y))));
-	horizontalSize = (width / (abs(horizontalStart) + abs(horizontalEnd)));
-	verticalSize = (height / (abs(verticalStart) + abs(verticalEnd)));
-	horizontalRes = (abs(horizontalStart) + abs(horizontalEnd)) / width * 1;
-	verticalRes = (abs(verticalStart) + abs(verticalEnd)) / height * 1;
+	shift = origin + ((origin - mouse) * scale);
+	horizontalSize = (width / (abs(scaleStart) + abs(scaleEnd)));
+	verticalSize = (height / (abs(scaleStart) + abs(scaleEnd)));
+	horizontalRes = (abs(scaleStart) + abs(scaleEnd)) / width * 1;
+	verticalRes = (abs(scaleStart) + abs(scaleEnd)) / height * 1;
 
-	horizontalStart = (-2 / scale) + ((abs((-2 / scale)) + abs(horizontalEnd)) / max_threads) * thread;
-	horizontalEnd = (-2 / scale) + ((abs((-2 / scale)) + abs(horizontalEnd)) / max_threads) * (thread + 1);
+	horizontalStart = start;
+	horizontalEnd = end;
+	verticalStart = start;
+	verticalEnd = end;
 
-	double x;
-	double y;
+	sf::Vector2f position;
 	int num;
 	for (double t = horizontalStart; t < horizontalEnd; t += horizontalRes) {
 
 		for (double m = verticalStart; m < verticalEnd; m += verticalRes) {
 
-			x = (t * horizontalSize + shiftX);
-			y = (m * verticalSize + shiftY);
+			position = sf::Vector2f(t * horizontalSize, m * verticalSize) + shift;
 
-			if (x >= 0 and x <= width and y >= 0 and y <= height) {
+			if (position.x >= 0 and position.x <= width and position.y >= 0 and position.y <= height) {
 
-				complex<double> c(t,m);
+				if (position.x >= ((width / max_threads) * thread) and position.x <= ((width / max_threads) * (thread + 1))) {
 
-				num = iterations(c);
+					complex<double> c(t, m);
 
-				if (num < 20) {
-					set.append(sf::Vertex(sf::Vector2f(x, y), sf::Color(num * 8, num * 6, num * 12)));
+					num = iterations(c);
+
+					if (num < 20) {
+						set.append(sf::Vertex(position, sf::Color(num * 8, num * 6, num * 12)));
+					}
+					else if (num < 40) {
+						set.append(sf::Vertex(position, sf::Color(num * 2, num / 2, num * 6)));
+					}
+					else if (num == 80) {
+						set.append(sf::Vertex(position, sf::Color::White));
+					}
+					else {
+						set.append(sf::Vertex(position, sf::Color(num * 3, num / 2, num * 2)));
+					}
 				}
-				else if (num < 40) {
-					set.append(sf::Vertex(sf::Vector2f(x, y), sf::Color(num * 2, num / 2, num * 6)));
-				}
-				else if (num == 80) {
-					set.append(sf::Vertex(sf::Vector2f(x, y), sf::Color::White));
-				}
-				else {
-					set.append(sf::Vertex(sf::Vector2f(x, y), sf::Color(num * 3, num / 2, num * 2)));
-				}
-
 			}
 		}
 	}
@@ -99,7 +103,7 @@ int main() {
 	double scale = 1;
 	sf::Event event;
 	list<thread> active_threads;
-	int max_threads = 4;
+	int max_threads = 8;
 	list<sf::VertexArray> sets;
 	list<sf::VertexArray>::iterator setIter;
 
